@@ -931,7 +931,7 @@ static int __init cedardev_init(void)
 #ifdef CONFIG_CMA
 	/* If having CMA enabled, just rely on CMA for memory allocation */
 	resource_size_t pa;
-	ve_size = 80 * SZ_1M;
+	ve_size = 1 * SZ_1M;
 	ve_start_virt = dma_alloc_coherent(NULL, ve_size, &pa,
 							GFP_KERNEL | GFP_DMA);
 	if (!ve_start_virt) {
