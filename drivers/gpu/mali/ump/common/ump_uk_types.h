@@ -126,6 +126,7 @@ typedef struct _ump_uk_phys_addr_get_s
 	void *ctx;                              /**< [in,out] user-kernel context (trashed on output) */
 	u32 secure_id;                          /**< Input to DD */
 	void *phys_addr;                        /**< Returned physical address; output */
+        void *bus_addr;                         /**< returned bus address; output */
 } _ump_uk_phys_addr_get_s;
 
 /**
