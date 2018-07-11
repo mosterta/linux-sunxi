@@ -43,4 +43,28 @@
  */
 #define IS_MODULE(option) config_enabled(option##_MODULE)
 
+#define __ARG_PLACEHOLDER_1 0,
+#define __take_second_arg(__ignored, val, ...) val
+
+/*
+ * The use of "&&" / "||" is limited in certain expressions.
+ * The following enable to calculate "and" / "or" with macro expansion only.
+ */
+#define __and(x, y)                     ___and(x, y)
+#define ___and(x, y)                    ____and(__ARG_PLACEHOLDER_##x, y)
+#define ____and(arg1_or_junk, y)        __take_second_arg(arg1_or_junk y, 0)
+
+#define __or(x, y)                      ___or(x, y)
+#define ___or(x, y)                     ____or(__ARG_PLACEHOLDER_##x, y)
+#define ____or(arg1_or_junk, y)         __take_second_arg(arg1_or_junk 1, y)
+
+/*
+ * IS_REACHABLE(CONFIG_FOO) evaluates to 1 if the currently compiled
+ * code can call a function defined in code compiled based on CONFIG_FOO.
+ * This is similar to IS_ENABLED(), but returns false when invoked from
+ * built-in code when CONFIG_FOO is set to 'm'.
+ */
+#define IS_REACHABLE(option) __or(IS_BUILTIN(option), \
+                                __and(IS_MODULE(option), __is_defined(MODULE)))
+
 #endif /* __LINUX_KCONFIG_H */

@@ -7,6 +7,7 @@
 # include <linux/cache.h>
 # include <linux/seqlock.h>
 # include <linux/math64.h>
+# include <linux/time64.h>
 #endif
 
 #ifndef _STRUCT_TIMESPEC
@@ -108,10 +109,12 @@ static inline struct timespec timespec_sub(struct timespec lhs,
 }
 
 #define KTIME_MAX			((s64)~((u64)1 << 63))
+#ifndef KTIME_SEC_MAX
 #if (BITS_PER_LONG == 64)
 # define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
 #else
 # define KTIME_SEC_MAX			LONG_MAX
+#endif
 #endif
 
 /*

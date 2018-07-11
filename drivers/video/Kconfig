@@ -308,6 +308,15 @@ config FB_SUNXI_HDMI
         ---help---
         default m
 
+config FB_SUNXI_HDMI_CEC
+       bool "Allwinner A10 HDMI CEC Support"
+       depends on FB_SUNXI_HDMI
+       select CEC_CORE
+       select CEC_PIN
+       help
+          Choose this option if you have an Allwinner SoC with an HDMI
+          controller and want to use CEC.
+
 config HDMI_CEC
 	tristate "Consumer Electronics Control (CEC)"
 

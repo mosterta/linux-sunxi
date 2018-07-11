@@ -56,4 +56,9 @@
 __s32 Hdmi_init(struct platform_device *dev);
 __s32 Hdmi_exit(struct platform_device *dev);
 
+#define HDMI_CEC                  0x214
+#define HDMI_CEC_ENABLE                   (1 << 11)
+#define HDMI_CEC_TX                       (1 << 9)
+#define HDMI_CEC_RX                       (1 << 8)
+
 #endif

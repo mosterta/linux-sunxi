@@ -21,11 +21,13 @@
 #define __DEV_DISPLAY_H__
 
 #include "drv_hdmi_i.h"
+#include "media/cec-pin.h"
 
 typedef struct {
 	__bool bopen;
 	__disp_tv_mode_t mode;
 	__u32 base_hdmi;
+	struct cec_adapter      *cec_adap;
 } hdmi_info_t;
 
 extern hdmi_info_t ghdmi;

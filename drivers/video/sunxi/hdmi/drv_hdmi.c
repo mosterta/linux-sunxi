@@ -32,6 +32,34 @@
  */
 extern void audio_set_hdmi_func(__audio_hdmi_func *hdmi_func);
 
+#ifdef CONFIG_FB_SUNXI_HDMI_CEC
+static bool sun4i_hdmi_cec_pin_read(struct cec_adapter *adap)
+{
+        return readl(ghdmi.base_hdmi + HDMI_CEC) & HDMI_CEC_RX;
+}
+
+static void sun4i_hdmi_cec_pin_low(struct cec_adapter *adap)
+{
+        /* Start driving the CEC pin low */
+        writel(HDMI_CEC_ENABLE, ghdmi.base_hdmi + HDMI_CEC);
+}
+
+static void sun4i_hdmi_cec_pin_high(struct cec_adapter *adap)
+{
+        /*
+         * Stop driving the CEC pin, the pull up will take over
+         * unless another CEC device is driving the pin low.
+         */
+        writel(0, ghdmi.base_hdmi + HDMI_CEC);
+}
+
+static const struct cec_pin_ops sun4i_hdmi_cec_pin_ops = {
+        .read = sun4i_hdmi_cec_pin_read,
+        .low = sun4i_hdmi_cec_pin_low,
+        .high = sun4i_hdmi_cec_pin_high,
+};
+#endif
+
 
 static struct semaphore *run_sem;
 static struct task_struct *HDMI_task;
@@ -299,6 +327,23 @@ Hdmi_run_thread(void *parg)
 	return 0;
 }
 
+#if 0
+#define IS_ERR_VALUE(x) unlikely((unsigned long)(void *)(x) >= (unsigned long)-MAX_ERRNO)
+static inline bool __must_check IS_ERR(__force const void *ptr)
+{
+        return IS_ERR_VALUE((unsigned long)ptr);
+}
+#endif
+
+
+static inline int __must_check PTR_ERR_OR_ZERO(__force const void *ptr)
+{
+        if (IS_ERR(ptr))
+                return PTR_ERR(ptr);
+        else
+                return 0;
+}
+
 __s32 Hdmi_init(struct platform_device *dev)
 {
 	__audio_hdmi_func audio_func;
@@ -313,6 +358,17 @@ __s32 Hdmi_init(struct platform_device *dev)
 	err = hdmi_i2c_sunxi_probe(dev);
 	if (err)
 		return err;
+
+#ifdef CONFIG_FB_SUNXI_HDMI_CEC
+        ghdmi.cec_adap = cec_pin_allocate_adapter(&sun4i_hdmi_cec_pin_ops,
+                &ghdmi, "sun4i", CEC_CAP_TRANSMIT | CEC_CAP_LOG_ADDRS |
+                CEC_CAP_PASSTHROUGH | CEC_CAP_RC);
+        err = PTR_ERR_OR_ZERO(ghdmi.cec_adap);
+        if (err < 0)
+                return err;
+        writel(readl(ghdmi.base_hdmi + HDMI_CEC) & ~HDMI_CEC_TX,
+               ghdmi.base_hdmi + HDMI_CEC);
+#endif
 
 	audio_info.channel_num = 2;
 #if 0
@@ -330,6 +386,10 @@ __s32 Hdmi_init(struct platform_device *dev)
 
 	/* Run main task once, should give EDID information directly */
 	hdmi_main_task_loop();
+
+        err = cec_register_adapter(ghdmi.cec_adap, &dev->dev);
+        if (err < 0)
+		return err;
 
 	HDMI_task = kthread_create(Hdmi_run_thread, (void *)0, "hdmi proc");
 	if (IS_ERR(HDMI_task)) {
@@ -376,6 +436,8 @@ __s32 Hdmi_exit(struct platform_device *dev)
 		kthread_stop(HDMI_task);
 		HDMI_task = NULL;
 	}
+
+	cec_unregister_adapter(ghdmi.cec_adap);
 
 	hdmi_i2c_sunxi_remove(dev);
 

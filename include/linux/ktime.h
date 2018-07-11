@@ -332,4 +332,14 @@ static inline ktime_t ns_to_ktime(u64 ns)
 	return ktime_add_ns(ktime_zero, ns);
 }
 
+extern ktime_t ktime_get(void);
+
+static inline u64 ktime_get_ns(void)
+{
+        return ktime_to_ns(ktime_get());
+}
+
+//# include <linux/timekeeping.h>
+//# include <linux/timekeeping32.h>
+
 #endif

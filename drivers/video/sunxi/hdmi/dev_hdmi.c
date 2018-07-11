@@ -70,6 +70,8 @@ static int hdmi_remove(struct platform_device *pdev)
 {
 	__inf("hdmi_remove call\n");
 
+	if(ghdmi.cec_adap)
+		cec_phys_addr_invalidate(ghdmi.cec_adap);
 	Hdmi_exit(pdev);
 
 	return 0;
