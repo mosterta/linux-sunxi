@@ -14,6 +14,12 @@
 #endif /* __EXPORTED_HEADERS__ */
 #endif
 
+#ifdef CONFIG_PHYS_ADDR_T_64BIT
+typedef u64 phys_addr_t;
+#else
+typedef u32 phys_addr_t;
+#endif
+
 #include <linux/posix_types.h>
 
 #ifdef __KERNEL__

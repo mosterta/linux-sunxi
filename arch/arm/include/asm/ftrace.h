@@ -45,10 +45,14 @@ void *return_address(unsigned int);
 
 #else
 
+void *return_address(unsigned int);
+
+/*
 extern inline void *return_address(unsigned int level)
 {
 	return NULL;
 }
+*/
 
 #endif
 
