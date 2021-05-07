@@ -260,6 +260,9 @@
 # include <linux/irq.h>
 #endif
 
+#include <linux/syscalls.h>
+#include <linux/completion.h>
+
 #include <asm/processor.h>
 #include <asm/uaccess.h>
 #include <asm/irq.h>
@@ -1138,7 +1141,7 @@ void rand_initialize_disk(struct gendisk *disk)
 #endif
 
 static ssize_t
-random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
+_random_read(int nonblock, char __user *buf, size_t nbytes)
 {
 	ssize_t n, retval = 0, count = 0;
 
@@ -1158,7 +1161,7 @@ random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
 			  n*8, (nbytes-n)*8);
 
 		if (n == 0) {
-			if (file->f_flags & O_NONBLOCK) {
+			if (nonblock) {
 				retval = -EAGAIN;
 				break;
 			}
@@ -1191,6 +1194,12 @@ random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
 	}
 
 	return (count ? count : retval);
+}
+
+static ssize_t
+random_read(struct file *file, char __user *buf, size_t nbytes, loff_t *ppos)
+{
+	return _random_read(file->f_flags & O_NONBLOCK, buf, nbytes);
 }
 
 static ssize_t
@@ -1318,6 +1327,29 @@ const struct file_operations urandom_fops = {
 	.fasync = random_fasync,
 	.llseek = noop_llseek,
 };
+
+SYSCALL_DEFINE3(getrandom, char __user *, buf, size_t, count,
+		unsigned int, flags)
+{
+	if (flags & ~(GRND_NONBLOCK|GRND_RANDOM))
+		return -EINVAL;
+
+	if (count > INT_MAX)
+		count = INT_MAX;
+
+	if (flags & GRND_RANDOM)
+		return _random_read(flags & GRND_NONBLOCK, buf, count);
+
+/*	if (unlikely(nonblocking_pool.initialized == 0)) {
+		if (flags & GRND_NONBLOCK)
+			return -EAGAIN;
+		wait_event_interruptible(urandom_init_wait,
+					 nonblocking_pool.initialized);
+		if (signal_pending(current))
+			return -ERESTARTSYS;
+	} */
+	return urandom_read(NULL, buf, count, NULL);
+}
 
 /***************************************************************
  * Random UUID interface
